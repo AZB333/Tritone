@@ -1,0 +1,2 @@
+# VocalFry
+A combination of voice memos and a pitch detector. Can record audio input from a device and display the pitch of the audio throughout the recording. This is great for people who want to come up with melodic ideas on a whim and also have the notes they created.
