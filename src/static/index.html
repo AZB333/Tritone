@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VocalFry</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- 
+{# ---- Sample data. Replace with values passed from your Flask route. ---- #}
+{% set memos = [
+  {"title": "Chorus idea, kitchen", "date": "Today, 9:14 AM", "length": "0:32", "notes": ["E4", "G4", "A4", "D4"]},
+  {"title": "Walking home hum", "date": "Yesterday", "length": "1:05", "notes": ["C4", "D4", "F4"]},
+  {"title": "Bridge, maybe?", "date": "Sep 16", "length": "0:18", "notes": ["A3", "C4", "E4", "G4"]},
+  {"title": "Whistle thing", "date": "Sep 12", "length": "0:41", "notes": ["B4", "D5", "G4"]}
+] %}
+{% set keys = ["C5","B4","A#4","A4","G#4","G4","F#4","F4","E4","D#4","D4","C#4","C4"] %}
+{% set roll = [
+  {"start": 2,  "len": 10, "row": 8},
+  {"start": 13, "len": 8,  "row": 5},
+  {"start": 22, "len": 13, "row": 3},
+  {"start": 36, "len": 8,  "row": 5},
+  {"start": 46, "len": 10, "row": 8},
+  {"start": 58, "len": 8,  "row": 10},
+  {"start": 68, "len": 14, "row": 8},
+  {"start": 84, "len": 11, "row": 12}
+] %}
+{% set bars = [30,44,58,36,72,90,64,48,80,96,70,52,38,60,84,92,66,40,28,50,76,88,62,46,34,56,78,94,68,42,26,48,72,86,58,38,30,44,60,40] %}
+-->
+<div class="app">
+
+  <!-- Sidebar: recordings list -->
+  <aside class="sidebar" aria-label="Your recordings">
+    <header class="sidebar-head">
+      <a class="brand" href="/">
+        <span class="logo-mark" aria-hidden="true"></span>
+        <span class="wordmark">VocalFry</span>
+      </a>
+      <button class="btn btn-small" type="button" data-open-auth>Sign in</button>
+    </header>
+
+    <label class="search">
+      <span class="visually-hidden">Search recordings</span>
+      <input type="search" placeholder="Search recordings">
+    </label>
+
+    <ul class="memo-list">
+      {% for m in memos %}
+      <li>
+        <a class="memo" href="#" {% if loop.first %}aria-current="true"{% endif %}>
+          <span class="memo-title">{{ m.title }}</span>
+          <span class="memo-meta">
+            <span>{{ m.date }}</span>
+            <span>{{ m.length }}</span>
+          </span>
+          <span class="chips">
+            {% for n in m.notes %}<span class="chip">{{ n }}</span>{% endfor %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <!-- Main: selected recording -->
+  <main class="main">
+    <section class="detail" aria-labelledby="memo-heading">
+      <div class="detail-head">
+        <h1 id="memo-heading" contenteditable="true" spellcheck="false">Chorus idea, kitchen</h1>
+        <p class="detail-meta">Today, 9:14 AM &middot; 0:32 &middot; Key guess: C major</p>
+      </div>
+
+      <div class="wave" role="img" aria-label="Audio waveform">
+        {% for h in bars %}<span class="{% if loop.index <= 16 %}is-played{% endif %}" style="--h: {{ h }}"></span>{% endfor %}
+      </div>
+
+      <div class="transport">
+        <button class="icon-btn" type="button" aria-label="Back 5 seconds">&#8630;</button>
+        <button class="icon-btn icon-btn-play" type="button" aria-label="Play">&#9654;</button>
+        <button class="icon-btn" type="button" aria-label="Forward 5 seconds">&#8631;</button>
+        <span class="time">0:12 / 0:32</span>
+      </div>
+
+      <h2 class="section-title">Notes you sang</h2>
+      <div class="roll" role="img" aria-label="Piano roll of detected notes">
+        <div class="roll-keys">
+          {% for k in keys %}<span class="{% if '#' in k %}is-black{% endif %}">{{ k }}</span>{% endfor %}
+        </div>
+        <div class="roll-grid">
+          {% for n in roll %}
+          <span class="note" style="--start: {{ n.start }}; --len: {{ n.len }}; --row: {{ n.row }}">{{ keys[n.row] }}</span>
+          {% endfor %}
+          <span class="playhead" style="--pos: 38"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Record dock -->
+    <div class="dock">
+      <span class="dock-time" id="dock-time">0:00</span>
+      <button class="rec" id="rec" type="button" aria-pressed="false" aria-label="Start recording">
+        <span class="rec-core"></span>
+      </button>
+      <span class="dock-hint" id="dock-hint">Tap to record</span>
+    </div>
+  </main>
+</div>
+
+<!-- Sign in / create account -->
+<dialog class="auth" id="auth">
+  <form method="post" action="/login">
+    <div class="auth-head">
+      <h2>Sign in</h2>
+      <button class="icon-btn" type="submit" formmethod="dialog" formnovalidate aria-label="Close">&times;</button>
+    </div>
+    <label class="field">
+      <span>Email</span>
+      <input type="email" name="email" autocomplete="email" required>
+    </label>
+    <label class="field">
+      <span>Password</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-big" type="submit">Sign in</button>
+    <p class="auth-alt">New here? <a href="/register">Create an account</a></p>
+  </form>
+</dialog>
+
+<script>
+  // Placeholder interactions. Swap in MediaRecorder logic later.
+  const rec = document.getElementById('rec');
+  const hint = document.getElementById('dock-hint');
+  const timeEl = document.getElementById('dock-time');
+  let timer = null, seconds = 0;
+
+  rec.addEventListener('click', () => {
+    const on = rec.getAttribute('aria-pressed') !== 'true';
+    rec.setAttribute('aria-pressed', on);
+    rec.setAttribute('aria-label', on ? 'Stop recording' : 'Start recording');
+    document.body.classList.toggle('is-recording', on);
+    hint.textContent = on ? 'Recording. Tap to stop' : 'Tap to record';
+    if (on) {
+      seconds = 0;
+      timer = setInterval(() => {
+        seconds++;
+        timeEl.textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+      }, 1000);
+    } else {
+      clearInterval(timer);
+    }
+  });
+
+  const auth = document.getElementById('auth');
+  document.querySelector('[data-open-auth]').addEventListener('click', () => auth.showModal());
+</script>
+</body>
+</html>
