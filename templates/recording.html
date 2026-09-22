@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tritone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar: recordings list -->
+  <aside class="sidebar" aria-label="Your recordings">
+    <header class="sidebar-head">
+      <div class="brand" >
+        <span class="logo-mark" aria-hidden="true"></span>
+        <span class="wordmark">Tritone</span>
+      </div>
+    </header>
+
+    <label class="search">
+      <span class="visually-hidden">Search recordings</span>
+      <input type="search" placeholder="Search recordings">
+    </label>
+
+    <ul class="memo-list">
+      {% for m in memos %}
+      <li>
+        <a class="memo" href="#" {% if loop.first %}aria-current="true"{% endif %}>
+          <span class="memo-title">{{ m.title }}</span>
+          <span class="memo-meta">
+            <span>{{ m.date }}</span>
+            <span>{{ m.length }}</span>
+          </span>
+          <span class="chips">
+            {% for n in m.notes %}<span class="chip">{{ n }}</span>{% endfor %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <!-- Main: selected recording -->
+  <main class="main">
+    <section class="detail" aria-labelledby="memo-heading">
+      <div class="detail-head">
+        <h1 id="memo-heading" contenteditable="true" spellcheck="false">Chorus idea, kitchen</h1>
+        <p class="detail-meta">Today, 9:14 AM &middot; 0:32 &middot; Key guess: C major</p>
+      </div>
+
+      <div class="wave" role="img" aria-label="Audio waveform">
+        {% for h in bars %}<span class="{% if loop.index <= 16 %}is-played{% endif %}" style="--h: {{ h }}"></span>{% endfor %}
+      </div>
+
+      <div class="transport">
+        <button class="icon-btn" type="button" aria-label="Back 5 seconds">&#8630;</button>
+        <button class="icon-btn icon-btn-play" type="button" aria-label="Play">&#9654;</button>
+        <button class="icon-btn" type="button" aria-label="Forward 5 seconds">&#8631;</button>
+        <span class="time">0:12 / 0:32</span>
+      </div>
+
+      <h2 class="section-title">Notes you sang</h2>
+      <div class="roll" role="img" aria-label="Piano roll of detected notes">
+        <div class="roll-keys">
+          {% for k in keys %}<span class="{% if '#' in k %}is-black{% endif %}">{{ k }}</span>{% endfor %}
+        </div>
+        <div class="roll-grid">
+          {% for n in roll %}
+          <span class="note" style="--start: {{ n.start }}; --len: {{ n.len }}; --row: {{ n.row }}">{{ keys[n.row] }}</span>
+          {% endfor %}
+          <span class="playhead" style="--pos: 38"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Record dock -->
+    <div class="dock">
+      <span class="dock-time" id="dock-time">0:00</span>
+      <button class="rec" id="rec" type="button" aria-pressed="false" aria-label="Start recording">
+        <span class="rec-core"></span>
+      </button>
+      <span class="dock-hint" id="dock-hint">Tap to record</span>
+    </div>
+  </main>
+</div>
+
+<!-- Sign in / create account -->
+<dialog class="auth" id="auth">
+  <form method="post" action="/login">
+    <div class="auth-head">
+      <h2>Sign in</h2>
+      <button class="icon-btn" type="submit" formmethod="dialog" formnovalidate aria-label="Close">&times;</button>
+    </div>
+    <label class="field">
+      <span>Email</span>
+      <input type="email" name="email" autocomplete="email" required>
+    </label>
+    <label class="field">
+      <span>Password</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-big" type="submit">Sign in</button>
+    <p class="auth-alt">New here? <a href="/register">Create an account</a></p>
+  </form>
+</dialog>
+
+<script src="../scripts/recording.js">
+</script>
+</body>
+</html>
