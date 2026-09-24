@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Home Page</title>
+    <link rel="stylesheet" href="../static/styles.css">
 </head>
 <body>
     <h1>Welcome to Tritone!</h1>
     <p>This is the homepage.</p>
-    <p>Hello, {{ name }}!</p>
+    <p>Hello, {{ username or "null" }}!</p>
+    <a href="/recording">Go to Recording</a>
     <a href="/create_account">Create Account</a>
+    <a href="/logout">Logout</a>
 </body>
 </html>

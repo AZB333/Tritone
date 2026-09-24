@@ -2,20 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Account</title>
+    <title>Login</title>
     <link rel="stylesheet" href="../static/styles.css">
 </head>
 <body>
-    <h1>Create Account</h1>
-    <p>Please fill out the form below to create an account.</p>
-    <form action="/create_account" method="post">
+    <h1>Login</h1>
+    <p>Please fill out the form below to log in.</p>
+    <form action="/login" method="post">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <br><br>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
         <br><br>
-        <input type="submit" value="Create Account">
+        <input type="submit" value="Login">
     </form>
 </body>
 </html>
