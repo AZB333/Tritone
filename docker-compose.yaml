@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./tritone-app/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  flask:
+    build: ./tritone-app
+    restart: unless-stopped
+    environment:
+      FLASK_APP: app.py
+      DATABASE_URL: postgresql://aleqz:aleqz333@db:5432/tritonedb
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
