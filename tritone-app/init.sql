@@ -1,6 +1,5 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
@@ -17,4 +16,11 @@ CREATE TABLE users_recordings (
     user_id INTEGER REFERENCES users(id),
     recording_id INTEGER REFERENCES recordings(id),
     PRIMARY KEY (user_id, recording_id)
+);
+
+CREATE TABLE sessions (
+    session_id TEXT PRIMARY KEY,
+    username TEXT NOT NULL REFERENCES users(username),
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP
 );

@@ -3,9 +3,18 @@ from flask import Flask, Response, redirect, render_template, request, jsonify
 import librosa
 import numpy as np
 import subprocess, os, uuid
+import psycopg2
+from datetime import datetime, timedelta
+from psycopg2.extras import RealDictCursor
+import secrets
+
 
 app = Flask(__name__)
 UPLOAD_DIR = "static/audio"
+
+def get_db_connection():
+    return psycopg2.connect(os.environ["DATABASE_URL"])
+
 
 """
 audio processing section
@@ -61,12 +70,36 @@ def extract_notes(f0, voiced_flag, sr, hop_length=512):
 
 @app.route("/")
 def home():
-    username = "John Doe"
-    return render_template('index.html', name=username)
+    user = get_session_id(request.cookies.get("session_id"))
+    if not user:
+        return redirect("/login")
+    return render_template('index.html', username=user["username"])
 
 @app.route("/recording")
 def recording():
+    session_id = get_session_id(request.cookies.get("session_id"))
+    if not session_id:
+        return redirect("/login")
     return render_template('recording.html')
+
+@app.route("/login", methods=["GET"])
+def login_get():
+    """The login page."""
+    return render_template("login.html")
+
+@app.route("/login", methods=["POST"])
+def login_post():
+    """Log in a user."""
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    user = get_user(username)
+    if not user or user.get("password") != password:
+        return render_template("error.html", error="Invalid username or password")
+
+    response = redirect("/recording")
+    response.set_cookie("session_id", create_session_id(username))
+    return response
 
 @app.route("/create_account", methods=["GET"])
 def create_account_get():
@@ -79,24 +112,61 @@ def create_account_post():
     username = request.form.get("username")
     password = request.form.get("password")
 
-    email = request.form.get("email", "")
-
     if not username or not password:
         return render_template("error.html", error="Username and password are both required")
 
-    # if get_user(username) is not None:
-    #     return render_template("error.html", error="A user with that username already exists")
+    if get_user(username) is not None:
+        return render_template("error.html", error="A user with that username already exists")
 
-    # db.execute(
-    #     "INSERT INTO users (username, password, email, address, balance) "
-    #     "VALUES (%s, %s, %s, '', 100)",
-    #     (username, password, email),
-    # )
 
-    # log.info("new account %s registered with email %s", username, email)
-
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (username, password))
+    conn.commit()
+    cur.close()
+    conn.close()
     response = redirect("/")
-    # response.set_cookie("session_id", create_session_id(username) , samesite="Lax") # set the session_id cookie
+    response.set_cookie("session_id", create_session_id(username))
     return response
+
+def get_session_id(session_id):
+    """Return a user dict from the database, or None if not found."""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM sessions WHERE session_id = %s;", (session_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return user if user else None
+
+def get_user(username):
+    """Return a user dict from the database, or None if not found."""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM users WHERE username = %s;", (username,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return user if user else None
+
+def create_session_id(username):
+    """Create a new session ID for the given username."""
+    session_id = secrets.token_hex(32)
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("INSERT into sessions (session_id, username, expires_at) VALUES (%s, %s, %s);", (session_id, username, datetime.now() + timedelta(hours=24)))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return session_id
+
+
+@app.route("/logout", methods=["GET"])
+def logout():
+    response = redirect("/login")
+    response.delete_cookie("session_id")
+    return response
+
+
 if __name__ == "__main__":
     app.run(debug=True)
