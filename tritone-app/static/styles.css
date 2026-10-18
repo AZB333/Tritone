@@ -1,3 +1,4 @@
+/* Pitch Memos — late-night studio theme */
 :root{
   --ink:#15110F; --panel:#1F1917; --side:#1A1513; --line:#3A2F2A; --grid:#2E2521;
   --cream:#F3E9D8; --mute:#A8998A;
@@ -26,7 +27,10 @@ body:has(#tab-record:checked) .library{display:none}
 
 /* Buttons */
 .btn{height:44px;width:100%;border-radius:22px;border:1px solid transparent;font-weight:700;font-size:14px}
-.btn-record-new{display:none;background:var(--rose);color:var(--ink);margin-top:20px}
+.btn-record-new{display:none;align-items:center;justify-content:center;gap:10px;background:var(--rose);color:var(--ink);margin-top:20px}
+.btn-record-new .dot{width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.btn-record-new[aria-pressed=true]{background:none;border-color:var(--rose);color:var(--rose)}
+.btn-record-new[aria-pressed=true] .dot{background:var(--rose)}
 .btn-outline{border-color:var(--amber);background:none;color:var(--amber);margin-top:20px}
 .btn-ghost{border-color:var(--line);background:none;margin-top:10px}
 
@@ -65,7 +69,18 @@ body:has(#tab-record:checked) .library{display:none}
 .controls{display:flex;justify-content:center;align-items:center;gap:36px;margin-top:40px}
 .round{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:20px}
 .rec{width:92px;height:92px;border-radius:50%;border:4px solid var(--cream);background:var(--ink);display:grid;place-items:center}
-.rec span{width:34px;height:34px;border-radius:8px;background:var(--rose)}
+.rec span{width:34px;height:34px;border-radius:50%;background:var(--rose);transition:border-radius .15s,transform .15s}
+.rec[aria-pressed=true]{border-color:var(--rose)}
+.rec[aria-pressed=true] span{border-radius:8px;transform:scale(.8)}
+.is-recording .status{color:var(--rose)}
+.is-recording .roll{border-color:var(--rose)}
+
+/* Desktop playback bar */
+.transport{display:none;align-items:center;gap:16px;height:56px;margin-top:14px;padding:0 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.transport .play{width:40px;height:40px}
+.transport .play::after{inset:12px 10px 12px 15px}
+.time{font:400 13px var(--mono);color:var(--mute);white-space:nowrap}
+.scrub{flex:1;min-width:0;height:24px;background:none;accent-color:var(--amber)}
 
 /* Notes panel */
 .note-list{margin:12px 0 0;font:500 15px/2 var(--mono);color:var(--teal)}
@@ -84,21 +99,25 @@ body:has(#tab-library:focus-visible) .tabbar label:nth-child(2){outline:2px soli
   body:has(#tab-library:checked) .studio,body:has(#tab-record:checked) .library{display:block}
   .tabbar{display:none}
   .library{background:var(--side);border-right:1px solid var(--grid);padding:28px 18px}
-  .btn-record-new{display:block}
+  .btn-record-new{display:flex}
   .memo{padding:12px;background:none;border-color:transparent}
   .memo.is-active{background:#2A201C;border-color:var(--amber)}
-  .play,.memo .seq{display:none}
+  .memo .play,.memo .seq{display:none}
   .studio{padding:32px 36px}
   .studio-head{display:block}
   .tags{display:flex;gap:8px;margin:8px 0 0;font:500 12px var(--mono);color:var(--mute)}
   .tag{padding:6px 12px;border-radius:16px;border:1px solid var(--line)}
   .tag-key{color:var(--teal)}
-  .readout{margin-top:24px;text-align:left}
-  .note{font-size:64px}.note sup{font-size:30px}
-  .controls{justify-content:flex-start;margin-top:28px}
+  .readout,.clock,.controls{display:none}
+  .roll{margin-top:24px}
+  .transport{display:flex}
   .notes{display:block;background:var(--side);border-left:1px solid var(--grid);padding:32px 20px}
 }
 @media (prefers-reduced-motion:no-preference){
+  .rec[aria-pressed=true]{animation:ring 1.4s ease-out infinite}
+  .btn-record-new[aria-pressed=true] .dot{animation:blink 1s steps(2,start) infinite}
+  @keyframes ring{0%{box-shadow:0 0 0 0 rgba(232,118,95,.55)}100%{box-shadow:0 0 0 18px rgba(232,118,95,0)}}
+  @keyframes blink{50%{opacity:.25}}
   .bar.is-live{animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{50%{box-shadow:0 0 4px var(--teal)}}
 }
