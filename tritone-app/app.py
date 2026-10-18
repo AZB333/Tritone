@@ -167,6 +167,10 @@ def logout():
     response.delete_cookie("session_id")
     return response
 
+@app.route("/test", methods=["GET"])
+def test():
+    return render_template("test.html")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
