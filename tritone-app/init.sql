@@ -20,7 +20,7 @@ CREATE TABLE users_recordings (
 
 CREATE TABLE sessions (
     session_id TEXT PRIMARY KEY,
-    username TEXT NOT NULL REFERENCES users(username),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     created_at TIMESTAMP DEFAULT NOW(),
     expires_at TIMESTAMP
 );

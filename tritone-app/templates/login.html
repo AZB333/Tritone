@@ -1,21 +1,37 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="../static/styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Log in · Tritone</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,600&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../static/styles.css">
+<link rel="stylesheet" href="../static/auth.css">
 </head>
 <body>
-    <h1>Login</h1>
-    <p>Please fill out the form below to log in.</p>
-    <form action="/login" method="post">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br><br>
-        <input type="submit" value="Login">
+<div class="auth">
+  <aside class="auth-side" aria-hidden="true">
+    <span class="brand">Tritone</span>
+    <p class="tagline">Catch the melody before it&rsquo;s gone.</p>
+    <div class="roll">
+      <span class="row" style="--row:0"></span><span class="row" style="--row:1"></span><span class="row" style="--row:2"></span><span class="row" style="--row:3"></span>
+      <span class="row" style="--row:4"></span><span class="row" style="--row:5"></span><span class="row" style="--row:6"></span><span class="row" style="--row:7"></span>
+      <i class="bar" style="--row:4;--x:6;--w:12"></i><i class="bar" style="--row:3;--x:21;--w:9"></i><i class="bar" style="--row:2;--x:33;--w:20"></i>
+      <i class="bar" style="--row:3;--x:57;--w:8"></i><i class="bar" style="--row:4;--x:68;--w:12"></i><i class="bar is-live" style="--row:5;--x:84;--w:10"></i>
+    </div>
+  </aside>
+  <main class="auth-main">
+    <span class="brand">Tritone</span>
+    <h1>Welcome back</h1>
+    <form class="auth-form" action="/login" method="post">
+      <div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+      <!-- Error pattern: add class "has-error" to .field and insert <p class="error" role="alert" id="..."> after the input -->
+      <button class="btn btn-primary" type="submit">Log in</button>
     </form>
+    
+    <p class="switch">New here? <a href="create_account.html">Create an account</a></p>
+  </main>
+</div>
 </body>
 </html>

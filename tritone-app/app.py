@@ -40,8 +40,27 @@ def analyze():
     # move the file into permanent storage, save path + notes to DB here
     os.remove(raw_path)
 
+    user_id = get_user_id_from_session(request.cookies.get("session_id"))
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("INSERT INTO recordings (user_id, filename) VALUES (%d, %s);", (user_id, wav_path))
+    conn.commit()
+    cur.execute("INSERT INTO users_recordings (user_id, recording_id) VALUES (%d, %s);", (user_id, cur.lastrowid))
+    conn.commit()
+    cur.close()
+    conn.close()
     return jsonify({"notes": notes})
 
+
+def get_user_id_from_session(session_id):
+    """Return the user_id associated with a session_id."""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT user_id FROM sessions WHERE session_id = %s;", (session_id,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result["user_id"] if result else None
 
 def extract_notes(f0, voiced_flag, sr, hop_length=512):
     """Collapse a frame-by-frame pitch track into discrete note events."""
@@ -154,7 +173,9 @@ def create_session_id(username):
     session_id = secrets.token_hex(32)
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("INSERT into sessions (session_id, username, expires_at) VALUES (%s, %s, %s);", (session_id, username, datetime.now() + timedelta(hours=24)))
+    cur.execute("SELECT * FROM users WHERE username = %s;", (username,))
+    user = cur.fetchone()
+    cur.execute("INSERT into sessions (session_id, user_id, expires_at) VALUES (%s, %s, %s);", (session_id, user["id"], datetime.now() + timedelta(hours=24)))
     conn.commit()
     cur.close()
     conn.close()
