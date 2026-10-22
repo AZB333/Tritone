@@ -32,16 +32,17 @@
     <section class="readout" aria-live="polite">
     </section>
 
-    <div class="roll" role="slider" tabindex="0" aria-label="Playback position"
-      aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
-      <i class="progress"></i>
-      <!-- .bar elements go here -->
-      <i class="playhead"></i>
+    <div class="roll-wrap">
+      <div class="roll-keys" id="roll-keys"></div>
+      <div class="roll" role="slider" tabindex="0" aria-label="Playback position"
+        aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+        <i class="progress"></i>
+        <i class="playhead"></i>
+      </div>
     </div>
     <p class="clock"><span data-clock="">0:00</span></p>
 
     <div class="transport">
-      <button class="play" type="button" aria-label="Play" aria-pressed="false"></button>
       <button class="play" type="button" aria-label="Play" aria-pressed="false"></button>
       <span class="time">0:00 / 0:00</span>
     </div>

@@ -81,6 +81,34 @@ body:has(#tab-record:checked) .library{display:none}
 .bar.is-live{background:var(--teal);box-shadow:0 0 14px var(--teal)}
 .playhead{position:absolute;top:0;bottom:0;left:calc(var(--x)*1%);width:2px;background:var(--rose)}
 .clock{display:flex;justify-content:space-between;margin:18px 0 0;font:400 13px var(--mono);color:var(--mute)}
+.roll-wrap {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr;
+}
+
+.roll-keys {
+  display: grid;
+  grid-template-rows: repeat(var(--row-count, 8), 1fr);
+}
+.roll-keys span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.roll-keys span.is-black {
+  opacity: 0.55;
+}
+
+.bar {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  width: calc(var(--w) * 1% + 2px); /* +2px keeps very short/zero-length notes visible */
+  top: calc(var(--row) * (100% / var(--row-count, 8)));
+  height: calc(100% / var(--row-count, 8));
+}
 
 /* Transport */
 .controls{display:flex;justify-content:center;align-items:center;gap:36px;margin-top:40px}

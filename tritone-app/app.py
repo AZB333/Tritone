@@ -50,7 +50,7 @@ def analyze():
 
     y, sr = librosa.load(wav_path, sr=22050)
     f0, voiced_flag, _ = librosa.pyin(
-        y, fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7')
+        y, fmin=librosa.note_to_hz('F2'), fmax=librosa.note_to_hz('C6')
     )
 
     notes = extract_notes(f0, voiced_flag, sr)
@@ -89,7 +89,19 @@ def get_user_id_from_session(session_id):
     conn.close()
     return result["user_id"] if result else None
 
-def extract_notes(f0, voiced_flag, sr, hop_length=512):
+def merge_close_notes(notes, max_gap=0.05):
+    if not notes:
+        return notes
+    merged = [notes[0]]
+    for n in notes[1:]:
+        last = merged[-1]
+        if n["note"] == last["note"] and (n["start"] - last["end"]) <= max_gap:
+            last["end"] = n["end"]
+        else:
+            merged.append(n)
+    return merged
+
+def extract_notes(f0, voiced_flag, sr, hop_length=512, min_duration=0.09):
     """Collapse a frame-by-frame pitch track into discrete note events."""
     notes = []
     current = None
@@ -110,7 +122,9 @@ def extract_notes(f0, voiced_flag, sr, hop_length=512):
                 current = None
     if current:
         notes.append(current)
-    return notes
+    notes = merge_close_notes(notes)
+    trimmed_notes = [n for n in notes if (n["end"] - n["start"]) >= min_duration]
+    return trimmed_notes
 
 # update recording titles if they wish
 @app.route("/api/recordings/<int:recording_id>", methods=["PATCH"])
@@ -163,7 +177,7 @@ def login_post():
 
     user = get_user(username)
     if not user or user.get("password") != password:
-        return render_template("error.html", error="Invalid username or password")
+        return redirect("/login?error=Invalid username or password")
 
     response = redirect("/recording")
     response.set_cookie("session_id", create_session_id(username))

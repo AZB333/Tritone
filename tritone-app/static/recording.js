@@ -17,57 +17,80 @@ document.addEventListener('DOMContentLoaded', getrecordings);
 
 // delete a recording from the list and the server
 recordings.addEventListener('click', async (e) => {
-  const btn = e.target.closest('.delete');
-  if (!btn) return; // click wasn't on a delete button
+  console.log('bruh');
+  const deleteBtn = e.target.closest('.delete');
+  const playBtn = e.target.closest('.play');
 
-  const id = btn.dataset.id;
-  const li = btn.closest('.memo');
+  if(deleteBtn) {
+    const id = deleteBtn.dataset.id;
+    const li = deleteBtn.closest('.memo');
 
-  try {
-    const res = await fetch(`/api/recordings/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    li.remove(); // drop it from the UI without a full refetch
+    try {
+      const res = await fetch(`/api/recordings/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      li.remove(); // drop it from the UI without a full refetch
 
-    if (String(id) === String(currentRecordingId)) {
-      // they deleted the one currently open in the studio — clear it out
-      currentRecordingId = null;
-      heading.textContent = 'No recording selected';
-      renderNotes([]);
+      if (String(id) === String(currentRecordingId)) {
+        // they deleted the one currently open in the studio — clear it out
+        currentRecordingId = null;
+        heading.textContent = 'No recording selected';
+        renderNotes([]);
+      }
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Could not delete that recording.');
     }
-  } catch (err) {
-    console.error('Delete failed:', err);
-    alert('Could not delete that recording.');
+    return;
+  }
+
+  if (playBtn) {
+    const recording = recordingsById[playBtn.dataset.id];
+    if (recording) {
+      loadRecording(recording);
+      Playback.toggle();
+    }
+    return;
+  }
+
+  const li = e.target.closest('.memo');
+  if (li) {
+    const recording = recordingsById[li.dataset.id];
+    if (recording) loadRecording(recording);
   }
 });
+
+let recordingsById = {};
 
 function getrecordings(){
     fetch('/api/recordings')
     .then(response => {
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
     })
     .then(data => {
         recordings.innerHTML = '';
-        if(data.recordings.length === 0){
+        recordingsById = {}; // reset
+        if (data.recordings.length === 0) {
             const li = document.createElement('li');
             li.textContent = 'You have no recordings yet. Try recording something!';
             recordings.appendChild(li);
+            return;
         }
         data.recordings.forEach(recording => {
+            recordingsById[recording.id] = recording; // store for later lookup
+
             const li = document.createElement('li');
             li.className = 'memo';
-            li.addEventListener('click', () => loadRecording(recording));
+            li.dataset.id = recording.id; // put the id on the row itself
             li.innerHTML = `
-                <button class="play" type="button" aria-label="Play ${recording.title}"></button>
+                <button class="play" type="button" data-id="${recording.id}" aria-label="Play ${recording.title}"></button>
                 <button class="delete" data-id="${recording.id}" type="button" aria-label="Delete ${recording.title}">Delete</button>
-                <div><b>${recording.title}</b><span class="meta">${new Date(recording.created_at).toLocaleString()} &middot; ${fmt(Math.trunc(recording.duration) * 100 / 100)}</span></div>
+                <div><b>${recording.title}</b><span class="meta">${new Date(recording.created_at).toLocaleString()} &middot; ${fmt(Math.trunc(recording.duration))}</span></div>
             `;
             recordings.appendChild(li);
         });
     })
-    .catch(error => {
-        console.error('Error fetching recordings:', error);
-    });
+    .catch(error => console.error('Error fetching recordings:', error));
 }
 
 function loadRecording(recording) {
@@ -172,16 +195,43 @@ function toMidi(name) {
   const acc = /[#♯]/.test(m[2]) ? 1 : /[b♭]/.test(m[2]) ? -1 : 0;
   return (Number(m[3]) + 1) * 12 + base + acc;
 }
-function noteToRow(name) {
-  const midi = toMidi(name);
-  if (midi === null) return 0;
-  let best = 0;
-  ROWS.forEach((r, i) => { if (Math.abs(toMidi(r) - midi) < Math.abs(toMidi(ROWS[best]) - midi)) best = i; });
-  return best;
+const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+function midiToNote(midi) {
+  const name = NOTE_NAMES[midi % 12];
+  const octave = Math.floor(midi / 12) - 1;
+  return `${name}${octave}`;
+}
+function buildRows(notes) {
+  if (!notes.length) return ['C4']; // fallback for an empty roll
+  const midis = notes.map(n => toMidi(n.note)).filter(m => m !== null);
+  const min = Math.min(...midis) - 1;
+  const max = Math.max(...midis) + 1;
+  
+  const MAX_SPAN = 24; // 2 octaves
+  if (max - min > MAX_SPAN) {
+    const center = Math.round((max + min) / 2);
+    min = center - MAX_SPAN / 2;
+    max = center + MAX_SPAN / 2;
+  }
+  const rows = [];
+  for (let m = max; m >= min; m--) rows.push(midiToNote(m)); // top to bottom, high to low
+  return rows;
 }
 
-// Matches the CSS: bars use --row (0-7), --x and --w (percent of the roll)
+let currentRows = [];
+
 function renderNotes(notes) {
+  currentRows = buildRows(notes);
+
+  // Row labels
+  const keysEl = document.getElementById('roll-keys');
+  keysEl.innerHTML = currentRows
+    .map(n => `<span class="${n.includes('♯') ? 'is-black' : ''}">${n}</span>`)
+    .join('');
+
+  // Match CSS row height to however many rows we actually have
+  roll.style.setProperty('--row-count', currentRows.length);
+
   roll.querySelectorAll('.bar').forEach(el => el.remove());
   const total = notes.length ? notes[notes.length - 1].end : 1;
   notes.forEach(n => {
@@ -193,8 +243,13 @@ function renderNotes(notes) {
     el.style.setProperty('--row', noteToRow(n.note));
     roll.appendChild(el);
   });
+
   const list = document.querySelector('.note-list');
   if (list) list.textContent = notes.map(n => n.note).join(' · ');
+}
+
+function noteToRow(name) {
+  return currentRows.indexOf(name); // exact match now, since rows are built from real notes
 }
 
 // Auth dialog (only if those elements exist on the page)
