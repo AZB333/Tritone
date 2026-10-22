@@ -26,9 +26,9 @@ def generate_memo_name():
     return f"{random.choice(ADJECTIVES)} {random.choice(NOUNS)}"
 
 AUDIO_DIR = "static/audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
 app = Flask(__name__)
-UPLOAD_DIR = "static/audio"
 
 def get_db_connection():
     return psycopg2.connect(os.environ["DATABASE_URL"])

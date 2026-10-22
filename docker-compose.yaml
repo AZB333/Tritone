@@ -20,6 +20,8 @@ services:
       - "5000:5000"
     depends_on:
       - db
+    volumes:
+      - ./tritone-app/static/audio:/app/static/audio
 
 volumes:
   pgdata:

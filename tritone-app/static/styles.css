@@ -92,12 +92,14 @@ body:has(#tab-record:checked) .library{display:none}
 .is-recording .status{color:var(--rose)}
 .is-recording .roll{border-color:var(--rose)}
 
-/* Desktop playback bar */
-.transport{display:none;align-items:center;gap:16px;height:56px;margin-top:14px;padding:0 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
-.transport .play{width:40px;height:40px}
-.transport .play::after{inset:12px 10px 12px 15px}
+/* Playback: the roll is the scrubber */
+.transport{display:flex;align-items:center;gap:14px;margin-top:14px}
 .time{font:400 13px var(--mono);color:var(--mute);white-space:nowrap}
-.scrub{flex:1;min-width:0;height:24px;background:none;accent-color:var(--amber)}
+.roll[role=slider]{cursor:pointer;touch-action:pan-y;user-select:none}
+.is-recording .roll[role=slider]{cursor:default}
+.roll .progress{position:absolute;top:0;bottom:0;left:0;width:calc(var(--pos,0)*1%);background:rgba(232,118,95,.08);pointer-events:none}
+.roll[role=slider] .playhead{left:calc(var(--pos,0)*1%);pointer-events:none}
+.roll .playhead::before{content:"";position:absolute;top:0;left:-5px;width:12px;height:12px;border-radius:50%;background:var(--rose)}
 
 /* Notes panel */
 .note-list{margin:12px 0 0;font:500 15px/2 var(--mono);color:var(--teal)}
@@ -130,7 +132,6 @@ body:has(#tab-library:focus-visible) .tabbar label:nth-child(2){outline:2px soli
   .tag-key{color:var(--teal)}
   .readout,.clock,.controls{display:none}
   .roll{margin-top:24px}
-  .transport{display:flex}
   .notes{display:block;background:var(--side);border-left:1px solid var(--grid);padding:32px 20px}
 }
 @media (prefers-reduced-motion:no-preference){
@@ -141,3 +142,6 @@ body:has(#tab-library:focus-visible) .tabbar label:nth-child(2){outline:2px soli
   .bar.is-live{animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{50%{box-shadow:0 0 4px var(--teal)}}
 }
+
+/* Play button turns into pause bars while playing */
+.play[aria-pressed=true]::after{inset:30%;clip-path:none;background:linear-gradient(90deg,var(--ink) 0 35%,transparent 35% 65%,var(--ink) 65%)}

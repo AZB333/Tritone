@@ -5,7 +5,7 @@ const clockEl = document.querySelector('[data-clock]');
 const roll = document.querySelector('.roll');
 const recordings = document.getElementById('recordings');
 const titleInput = document.getElementById('recording-title');
-const heading = document.getElementById('memo-heading');
+const heading = document.getElementById('header-title');
 
 // Rows on the pitch roll, top to bottom (must match the labels in index.html)
 const ROWS = ['E5', 'D5', 'C5', 'B4', 'A4', 'G4', 'F4', 'E4'];
@@ -75,6 +75,7 @@ function loadRecording(recording) {
   heading.textContent = recording.title;
   heading.dataset.originalTitle = recording.title;
   renderNotes(recording.notes);
+  Playback.load(`/static/audio/${recording.filename}`, recording.duration); 
 }
 
 let currentRecordingId = null;
@@ -157,6 +158,7 @@ async function uploadRecording() {
     const data = await res.json();
     renderNotes(data.notes);
     getrecordings();
+    // loadRecording(data); //we'll worry about this soon, without configuring ts a fresh recording won't play
   } catch (err) {
     if (statusEl) statusEl.textContent = 'Analysis failed';
   }
@@ -199,3 +201,88 @@ function renderNotes(notes) {
 const auth = document.getElementById('auth');
 const openAuth = document.querySelector('[data-open-auth]');
 if (auth && openAuth) openAuth.addEventListener('click', () => auth.showModal());
+
+// Playback: the pitch roll is the scrubber (tap, click or drag to choose where to play from)
+const Playback = (() => {
+  const roll = document.querySelector('.roll');
+  const playBtn = document.querySelector('.transport .play');
+  const timeEl = document.querySelector('.transport .time');
+  const audio = new Audio();
+  let duration = 0, dragging = false, raf = null;
+
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const recording = () => document.body.classList.contains('is-recording');
+
+  function render() {
+    const t = audio.currentTime || 0;
+    roll.style.setProperty('--pos', duration ? Math.min(100, (t / duration) * 100) : 0);
+    roll.setAttribute('aria-valuenow', t.toFixed(1));
+    roll.setAttribute('aria-valuetext', `${fmt(t)} of ${fmt(duration)}`);
+    timeEl.textContent = `${fmt(t)} / ${fmt(duration)}`;
+  }
+
+  // Smooth playhead (timeupdate only fires ~4x per second)
+  function loop() { render(); if (!audio.paused) raf = requestAnimationFrame(loop); }
+  function setPlaying(on) {
+    playBtn.setAttribute('aria-pressed', on);
+    playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play');
+    cancelAnimationFrame(raf);
+    if (on) loop(); else render();
+  }
+  audio.addEventListener('play', () => setPlaying(true));
+  audio.addEventListener('pause', () => setPlaying(false));
+  audio.addEventListener('ended', () => setPlaying(false));
+  audio.addEventListener('loadedmetadata', () => {
+    if (!duration && isFinite(audio.duration)) { duration = audio.duration; roll.setAttribute('aria-valuemax', duration); render(); }
+  });
+
+  // Pass the stored duration: MediaRecorder webm files often report Infinity
+  function load(url, seconds = 0) {
+    audio.pause();
+    audio.src = url;
+    duration = seconds;
+    roll.setAttribute('aria-valuemax', duration);
+    audio.currentTime = 0;
+    render();
+  }
+
+  function toggle() {
+    if (!audio.src || recording()) return;
+    audio.paused ? audio.play() : audio.pause();
+  }
+
+  function seek(seconds) {
+    if (!audio.src || !duration) return;
+    audio.currentTime = Math.min(duration, Math.max(0, seconds));
+    render();
+  }
+  const pctFromEvent = e => {
+    const r = roll.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  };
+
+  roll.addEventListener('pointerdown', e => {
+    if (recording() || !duration) return;
+    dragging = true;
+    roll.setPointerCapture(e.pointerId);
+    seek(pctFromEvent(e) * duration);
+  });
+  roll.addEventListener('pointermove', e => { if (dragging) seek(pctFromEvent(e) * duration); });
+  ['pointerup', 'pointercancel'].forEach(t => roll.addEventListener(t, () => { dragging = false; }));
+
+  roll.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 5 : 1;
+    const keys = {
+      ArrowLeft: () => seek(audio.currentTime - step),
+      ArrowRight: () => seek(audio.currentTime + step),
+      Home: () => seek(0),
+      End: () => seek(duration),
+      ' ': toggle,
+      Enter: toggle,
+    };
+    if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
+  });
+
+  playBtn.addEventListener('click', toggle);
+  return { load, toggle, seek };
+})();
