@@ -9,6 +9,10 @@ CREATE TABLE recordings (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     filename TEXT NOT NULL,
+    title TEXT NOT NULL UNIQUE DEFAULT 'Untitled Masterpiece',
+    duration REAL NOT NULL,
+    notes JSONB,
+    key TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

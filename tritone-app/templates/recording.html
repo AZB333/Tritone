@@ -19,63 +19,28 @@
     <button class="btn btn-record-new" type="button" data-rec aria-pressed="false"><span class="dot"></span><span class="rec-label">Record New</span></button>
     <label class="search"><span class="visually-hidden">Search memos</span>
       <input type="search" placeholder="Search by title"></label>
-    <div class="chips" role="group" aria-label="Filter by key">
-      <button class="chip is-on" type="button">All</button>
-      <button class="chip" type="button">D minor</button>
-      <button class="chip" type="button">C major</button>
-    </div>
     <ul id="recordings" class="memos">
-      <p>You have no recordings yet. Try recording something!</p>
-      <!-- <li class="memo is-active">
-        <button class="play" type="button" aria-label="Play Bridge idea"></button>
-        <div><b>Bridge idea</b><span class="meta">Today, 4:12 PM &middot; 0:24 &middot; D min</span><span class="seq">A4 B4 C5 A4 G4</span></div>
-      </li>
-      <li class="memo">
-        <button class="play" type="button" aria-label="Play Hook, take 2"></button>
-        <div><b>Hook, take 2</b><span class="meta">Yesterday &middot; 0:11 &middot; C maj</span><span class="seq">E4 G4 C5 B4</span></div>
-      </li>
-      <li class="memo">
-        <button class="play" type="button" aria-label="Play Walking bass"></button>
-        <div><b>Walking bass</b><span class="meta">Oct 12 &middot; 0:38 &middot; F maj</span><span class="seq">F4 A4 C5 A4 F4</span></div>
-      </li>
-      <li class="memo">
-        <button class="play" type="button" aria-label="Play Hum in the car"></button>
-        <div><b>Hum in the car</b><span class="meta">Oct 9 &middot; 0:17 &middot; G min</span><span class="seq">G4 B4 D5 C5</span></div>
-      </li> -->
+      <li>You have no recordings yet. Try recording something!</li>
     </ul>
   </aside>
 
   <!-- Studio: live note, pitch roll, controls -->
   <main class="studio">
-    <header class="studio-head"><h2 class="title">Bridge idea</h2>
-      <p class="tags"><span class="tag tag-key">D minor</span><span class="tag">0:24</span><span class="tag">~92 BPM</span></p></header>
-
+    <header id="memo-heading" class="studio-head">
+      <h2 class="title">Bridge idea</h2>
+    </header>
     <section class="readout" aria-live="polite">
-      <p class="status" data-status>Ready</p>
-      <p class="note">G<sup>4</sup></p>
-      <p class="hz">392.0 Hz &middot; +6 cents</p>
     </section>
 
-    <div class="roll" role="img" aria-label="Pitch roll: A4 B4 C5 B4 A4 G4">
-      <!-- <span class="row" style="--row:0">E5</span><span class="row" style="--row:1">D5</span>
-      <span class="row" style="--row:2">C5</span><span class="row" style="--row:3">B4</span>
-      <span class="row" style="--row:4">A4</span><span class="row" style="--row:5">G4</span>
-      <span class="row" style="--row:6">F4</span><span class="row" style="--row:7">E4</span>
-      <i class="bar" style="--row:4;--x:13;--w:10"></i>
-      <i class="bar" style="--row:3;--x:25;--w:8"></i>
-      <i class="bar" style="--row:2;--x:34;--w:15"></i>
-      <i class="bar" style="--row:3;--x:52;--w:7"></i>
-      <i class="bar" style="--row:4;--x:61;--w:17"></i>
-      <i class="bar is-live" style="--row:5;--x:82;--w:10"></i>
-      <i class="playhead" style="--x:94"></i> -->
+    <div class="roll" role="img" aria-label="Pitch roll:">
     </div>
-    <p class="clock"><span>Key: D minor</span><span data-clock>0:00</span></p>
+    <p class="clock"><span>Key: </span><span data-clock>0:00</span></p>
 
     <!-- Desktop playback bar (hidden on phone) -->
     <div class="transport">
       <button class="play" type="button" aria-label="Play"></button>
       <input class="scrub" type="range" min="0" max="24" step="0.1" value="10" aria-label="Playback position">
-      <span class="time">0:10 / 0:24</span>
+      <span class="time">0:00 / 0:00</span>
     </div>
 
     <div class="controls">

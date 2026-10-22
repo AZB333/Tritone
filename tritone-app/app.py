@@ -1,5 +1,5 @@
 import config
-from flask import Flask, Response, redirect, render_template, request, jsonify
+from flask import Flask, Response, json, redirect, render_template, request, jsonify
 import librosa
 import numpy as np
 import subprocess, os, uuid
@@ -8,6 +8,22 @@ from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 import secrets
 import shutil
+import random
+
+ADJECTIVES = [
+    "Dizzy", "Velvet", "Rusty", "Sly", "Mellow", "Jumpy", "Lucky", "Breezy",
+    "Spicy", "Fuzzy", "Golden", "Crooked", "Sneaky", "Silky", "Glowing",
+    "Wobbly", "Bright", "Salty", "Quiet", "Electric", "Risky", "Tilted", "Pleasant",
+]
+
+NOUNS = [
+    "Falcon", "Kazoo", "Comet", "Tambourine", "Pretzel", "Marmot", "Echo",
+    "Panther", "Kettle", "Otter", "Harmonica", "Wombat", "Lantern", "Cobra",
+    "Walrus", "Trumpet", "Badger", "Glacier", "Cymbal", "Penguin", "Goat", "Rain",
+]
+
+def generate_memo_name():
+    return f"{random.choice(ADJECTIVES)} {random.choice(NOUNS)}"
 
 AUDIO_DIR = "static/audio"
 
@@ -49,7 +65,14 @@ def analyze():
     user_id = get_user_id_from_session(request.cookies.get("session_id"))
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("INSERT INTO recordings (user_id, filename) VALUES (%s, %s);", (user_id, final_path))
+    title = generate_memo_name()
+    duration = float(notes[-1]["end"]) if notes else 0
+
+    cur.execute(
+        """INSERT INTO recordings (user_id, filename, title, duration, notes, created_at)
+        VALUES (%s, %s, %s, %s, %s, now())""",
+        (user_id, final_filename, title, duration, json.dumps(notes)),
+    )
     conn.commit()
     cur.close()
     conn.close()
@@ -72,7 +95,7 @@ def extract_notes(f0, voiced_flag, sr, hop_length=512):
     current = None
 
     for i, (freq, voiced) in enumerate(zip(f0, voiced_flag)):
-        t = librosa.frames_to_time(i, sr=sr, hop_length=hop_length)
+        t = float(librosa.frames_to_time(i, sr=sr, hop_length=hop_length))
         if voiced and not np.isnan(freq):
             name = librosa.hz_to_note(freq)
             if current and current["note"] == name:
@@ -88,6 +111,28 @@ def extract_notes(f0, voiced_flag, sr, hop_length=512):
     if current:
         notes.append(current)
     return notes
+
+# update recording titles if they wish
+@app.route("/api/recordings/<int:recording_id>", methods=["PATCH"])
+def rename_recording(recording_id):
+    user_id = get_user_id_from_session(request.cookies.get("session_id"))
+    if not user_id:
+        return jsonify({"error": "Not signed in"}), 401
+
+    new_title = request.json.get("title", "").strip()
+    if not new_title:
+        return jsonify({"error": "Title cannot be empty"}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE recordings SET title = %s WHERE id = %s AND user_id = %s;",
+        (new_title, recording_id, user_id),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"title": new_title})
 
 ####################################################################
 
@@ -205,6 +250,41 @@ def get_recordings():
     cur.close()
     conn.close()
     return jsonify({"recordings": recordings})
+
+@app.route("/api/recordings/<int:recording_id>", methods=["DELETE"])
+def delete_recording(recording_id):
+    user_id = get_user_id_from_session(request.cookies.get("session_id"))
+    if not user_id:
+        return jsonify({"error": "Not signed in"}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    # fetch first, so we only delete a file that belongs to this user
+    cur.execute(
+        "SELECT filename FROM recordings WHERE id = %s AND user_id = %s;",
+        (recording_id, user_id),
+    )
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Not found"}), 404
+
+    cur.execute(
+        "DELETE FROM recordings WHERE id = %s AND user_id = %s;",
+        (recording_id, user_id),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    # remove the audio file from disk too so it doesn't pile up orphaned
+    file_path = os.path.join(AUDIO_DIR, row["filename"])
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    return jsonify({"deleted": recording_id})
 
 if __name__ == "__main__":
     app.run(debug=True)

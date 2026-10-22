@@ -4,6 +4,8 @@ const statusEl = document.querySelector('[data-status]');
 const clockEl = document.querySelector('[data-clock]');
 const roll = document.querySelector('.roll');
 const recordings = document.getElementById('recordings');
+const titleInput = document.getElementById('recording-title');
+const heading = document.getElementById('memo-heading');
 
 // Rows on the pitch roll, top to bottom (must match the labels in index.html)
 const ROWS = ['E5', 'D5', 'C5', 'B4', 'A4', 'G4', 'F4', 'E4'];
@@ -13,8 +15,32 @@ let mediaRecorder, stream, chunks = [], timer = null, seconds = 0;
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 document.addEventListener('DOMContentLoaded', getrecordings);
 
+// delete a recording from the list and the server
+recordings.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.delete');
+  if (!btn) return; // click wasn't on a delete button
+
+  const id = btn.dataset.id;
+  const li = btn.closest('.memo');
+
+  try {
+    const res = await fetch(`/api/recordings/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    li.remove(); // drop it from the UI without a full refetch
+
+    if (String(id) === String(currentRecordingId)) {
+      // they deleted the one currently open in the studio — clear it out
+      currentRecordingId = null;
+      heading.textContent = 'No recording selected';
+      renderNotes([]);
+    }
+  } catch (err) {
+    console.error('Delete failed:', err);
+    alert('Could not delete that recording.');
+  }
+});
+
 function getrecordings(){
-  console.log("in recordings");
     fetch('/api/recordings')
     .then(response => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -22,25 +48,55 @@ function getrecordings(){
     })
     .then(data => {
         recordings.innerHTML = '';
+        if(data.recordings.length === 0){
+            const li = document.createElement('li');
+            li.textContent = 'You have no recordings yet. Try recording something!';
+            recordings.appendChild(li);
+        }
         data.recordings.forEach(recording => {
             const li = document.createElement('li');
             li.className = 'memo';
+            li.addEventListener('click', () => loadRecording(recording));
             li.innerHTML = `
                 <button class="play" type="button" aria-label="Play ${recording.title}"></button>
-                <div><b>${recording.title}</b><span class="meta">${new Date(recording.created_at).toLocaleString()} &middot; ${fmt(recording.duration)} &middot; ${recording.key}</span><span class="seq">${recording.notes.join(' ')}</span></div>
+                <button class="delete" data-id="${recording.id}" type="button" aria-label="Delete ${recording.title}">Delete</button>
+                <div><b>${recording.title}</b><span class="meta">${new Date(recording.created_at).toLocaleString()} &middot; ${fmt(Math.trunc(recording.duration) * 100 / 100)}</span></div>
             `;
             recordings.appendChild(li);
-            console.log("recording worked");
         });
     })
     .catch(error => {
-        console.log('Error fetching recordings:', error);
+        console.error('Error fetching recordings:', error);
     });
 }
+
+function loadRecording(recording) {
+  currentRecordingId = recording.id;
+  heading.textContent = recording.title;
+  heading.dataset.originalTitle = recording.title;
+  renderNotes(recording.notes);
+}
+
+let currentRecordingId = null;
+heading.addEventListener('blur', async () => {
+  if (!currentRecordingId) return; // nothing loaded yet, nothing to rename
+  const newTitle = heading.textContent.trim();
+  if (!newTitle) {
+    heading.textContent = heading.title; // revert if they cleared it
+    return;
+  }
+  await fetch(`/api/recordings/${heading.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: newTitle }),
+  });
+  heading.dataset.originalTitle = newTitle; // update the original title to the new one
+});
 
 
 // One function keeps every record button and the page in sync
 function setRecording(on) {
+  if (on) seconds=0;
   document.body.classList.toggle('is-recording', on);
   recButtons.forEach(btn => {
     btn.setAttribute('aria-pressed', on);
@@ -82,7 +138,6 @@ async function startRecording() {
   mediaRecorder.ondataavailable = e => chunks.push(e.data);
   mediaRecorder.onstop = () => {
     stream.getTracks().forEach(t => t.stop());   // release the mic
-    console.log('Recording stopped, uploading...');
     uploadRecording();
   };
   mediaRecorder.start();
@@ -102,7 +157,6 @@ async function uploadRecording() {
     const data = await res.json();
     renderNotes(data.notes);
     getrecordings();
-    renderNotes(data.notes);
   } catch (err) {
     if (statusEl) statusEl.textContent = 'Analysis failed';
   }

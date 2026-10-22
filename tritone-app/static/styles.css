@@ -41,12 +41,29 @@ body:has(#tab-record:checked) .library{display:none}
 .chip{padding:8px 14px;min-height:36px;border-radius:18px;border:1px solid var(--line);background:none;color:var(--mute);font:500 12px var(--mono)}
 .chip.is-on{background:var(--amber);border-color:var(--amber);color:var(--ink)}
 .memos{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
-.memo{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;background:var(--panel);border:1px solid var(--line)}
+.memo{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);transition:background .15s,border-color .15s}
+.memo>div{min-width:0}
+.memo b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .memo b{display:block;font-size:16px}
 .memo .meta{display:block;margin-top:3px;font:400 12px var(--mono);color:var(--mute)}
 .memo .seq{display:block;margin-top:6px;font:500 12px var(--mono);letter-spacing:.08em;color:var(--teal)}
 .memo.is-active{border-color:var(--amber);background:#2A201C}
-.play{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--amber);position:relative}
+@media (hover:hover){
+  .memo:hover{background:#2A201C;border-color:#5A463C}
+  .memo:hover .delete{border-color:#5A463C;color:var(--cream)}
+  .memo .delete:hover{color:var(--rose);border-color:var(--rose)}
+}
+
+/* Delete button: ghost circle with a trash icon, turns coral on hover/focus */
+.delete{flex:none;width:44px;height:44px;padding:0;border-radius:50%;border:1px solid var(--line);background:none;position:relative;font-size:0;color:var(--mute);transition:color .15s,border-color .15s,background .15s}
+.delete::after{content:"";position:absolute;inset:11px;background:currentColor;
+  -webkit-mask:var(--trash) center/contain no-repeat;mask:var(--trash) center/contain no-repeat}
+.delete:hover,.delete:focus-visible{color:var(--rose);border-color:var(--rose);background:rgba(232,118,95,.12)}
+.delete:active{transform:scale(.94)}
+:root{--trash:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'/%3E%3C/svg%3E")}
+.play{flex:none;width:44px;height:44px;padding:0;border-radius:50%;border:0;background:var(--amber);position:relative;font-size:0;color:transparent;transition:background .15s,transform .15s}
+.play:hover{background:#F5B958}
+.play:active{transform:scale(.94)}
 .play::after{content:"";position:absolute;inset:14px 12px 14px 17px;background:var(--ink);clip-path:polygon(0 0,100% 50%,0 100%)}
 
 /* Studio */
@@ -95,14 +112,17 @@ body:has(#tab-library:focus-visible) .tabbar label:nth-child(2){outline:2px soli
 
 /* Desktop: sidebar | studio | notes */
 @media (min-width:900px){
-  .app{display:grid;grid-template-columns:240px minmax(0,1fr) 260px;min-height:100dvh;padding:0}
+  .app{display:grid;grid-template-columns:300px minmax(0,1fr) 260px;min-height:100dvh;padding:0}
   body:has(#tab-library:checked) .studio,body:has(#tab-record:checked) .library{display:block}
   .tabbar{display:none}
   .library{background:var(--side);border-right:1px solid var(--grid);padding:28px 18px}
   .btn-record-new{display:flex}
   .memo{padding:12px;background:none;border-color:transparent}
   .memo.is-active{background:#2A201C;border-color:var(--amber)}
-  .memo .play,.memo .seq{display:none}
+  .memo .seq{display:none}
+  .memo .play,.memo .delete{width:36px;height:36px}
+  .memo .play::after{inset:11px 9px 11px 14px}
+  .memo .delete::after{inset:9px}
   .studio{padding:32px 36px}
   .studio-head{display:block}
   .tags{display:flex;gap:8px;margin:8px 0 0;font:500 12px var(--mono);color:var(--mute)}
