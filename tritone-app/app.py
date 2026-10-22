@@ -7,7 +7,9 @@ import psycopg2
 from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 import secrets
+import shutil
 
+AUDIO_DIR = "static/audio"
 
 app = Flask(__name__)
 UPLOAD_DIR = "static/audio"
@@ -37,15 +39,17 @@ def analyze():
 
     notes = extract_notes(f0, voiced_flag, sr)
 
+    final_filename = f"{uuid.uuid4()}.wav"
+    final_path = os.path.join(AUDIO_DIR, final_filename)
+    shutil.move(wav_path, final_path)
+
     # move the file into permanent storage, save path + notes to DB here
     os.remove(raw_path)
 
     user_id = get_user_id_from_session(request.cookies.get("session_id"))
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("INSERT INTO recordings (user_id, filename) VALUES (%d, %s);", (user_id, wav_path))
-    conn.commit()
-    cur.execute("INSERT INTO users_recordings (user_id, recording_id) VALUES (%d, %s);", (user_id, cur.lastrowid))
+    cur.execute("INSERT INTO recordings (user_id, filename) VALUES (%s, %s);", (user_id, final_path))
     conn.commit()
     cur.close()
     conn.close()
@@ -92,7 +96,7 @@ def home():
     user = get_session_id(request.cookies.get("session_id"))
     if not user:
         return redirect("/login")
-    return render_template('index.html', username=user["username"])
+    return redirect("/recording")
 
 @app.route("/recording")
 def recording():
@@ -144,7 +148,7 @@ def create_account_post():
     conn.commit()
     cur.close()
     conn.close()
-    response = redirect("/")
+    response = redirect("/recording")
     response.set_cookie("session_id", create_session_id(username))
     return response
 
@@ -192,6 +196,15 @@ def logout():
 def test():
     return render_template("test.html")
 
+@app.route("/api/recordings", methods=["GET"])
+def get_recordings():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM recordings WHERE user_id = %s;", (get_session_id(request.cookies.get("session_id"))["user_id"],))
+    recordings = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify({"recordings": recordings})
 
 if __name__ == "__main__":
     app.run(debug=True)

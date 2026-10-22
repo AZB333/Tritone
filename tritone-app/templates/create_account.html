@@ -29,7 +29,7 @@
       <!-- Error pattern: add class "has-error" to .field and insert <p class="error" role="alert" id="..."> after the input -->
       <button class="btn btn-primary" type="submit">Create account</button>
     </form>
-    <p class="switch">Already have an account? <a href="login.html">Log in</a></p>
+    <p class="switch">Already have an account? <a href="{{ url_for('login_get') }}">Log in</a></p>
   </main>
 </div>
 </body>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pitch Memos</title>
+<title>Tritone</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,600&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../static/styles.css">
 </head>
@@ -15,17 +15,18 @@
 
   <!-- Library: list of saved memos -->
   <aside class="library">
-    <h1 class="brand">Pitch Memos</h1>
-    <button class="btn btn-record-new" type="button" data-rec aria-pressed="false"><span class="dot"></span><span class="rec-label">Record new</span></button>
+    <h1 class="brand">Tritone</h1>
+    <button class="btn btn-record-new" type="button" data-rec aria-pressed="false"><span class="dot"></span><span class="rec-label">Record New</span></button>
     <label class="search"><span class="visually-hidden">Search memos</span>
-      <input type="search" placeholder="Search by title, note or key"></label>
+      <input type="search" placeholder="Search by title"></label>
     <div class="chips" role="group" aria-label="Filter by key">
       <button class="chip is-on" type="button">All</button>
       <button class="chip" type="button">D minor</button>
       <button class="chip" type="button">C major</button>
     </div>
-    <ul class="memos">
-      <li class="memo is-active">
+    <ul id="recordings" class="memos">
+      <p>You have no recordings yet. Try recording something!</p>
+      <!-- <li class="memo is-active">
         <button class="play" type="button" aria-label="Play Bridge idea"></button>
         <div><b>Bridge idea</b><span class="meta">Today, 4:12 PM &middot; 0:24 &middot; D min</span><span class="seq">A4 B4 C5 A4 G4</span></div>
       </li>
@@ -40,7 +41,7 @@
       <li class="memo">
         <button class="play" type="button" aria-label="Play Hum in the car"></button>
         <div><b>Hum in the car</b><span class="meta">Oct 9 &middot; 0:17 &middot; G min</span><span class="seq">G4 B4 D5 C5</span></div>
-      </li>
+      </li> -->
     </ul>
   </aside>
 
@@ -56,7 +57,7 @@
     </section>
 
     <div class="roll" role="img" aria-label="Pitch roll: A4 B4 C5 B4 A4 G4">
-      <span class="row" style="--row:0">E5</span><span class="row" style="--row:1">D5</span>
+      <!-- <span class="row" style="--row:0">E5</span><span class="row" style="--row:1">D5</span>
       <span class="row" style="--row:2">C5</span><span class="row" style="--row:3">B4</span>
       <span class="row" style="--row:4">A4</span><span class="row" style="--row:5">G4</span>
       <span class="row" style="--row:6">F4</span><span class="row" style="--row:7">E4</span>
@@ -66,7 +67,7 @@
       <i class="bar" style="--row:3;--x:52;--w:7"></i>
       <i class="bar" style="--row:4;--x:61;--w:17"></i>
       <i class="bar is-live" style="--row:5;--x:82;--w:10"></i>
-      <i class="playhead" style="--x:94"></i>
+      <i class="playhead" style="--x:94"></i> -->
     </div>
     <p class="clock"><span>Key: D minor</span><span data-clock>0:00</span></p>
 

@@ -1,8 +1,9 @@
-// Pitch Memos: recording UI + upload
+// Tritone: recording UI + upload
 const recButtons = document.querySelectorAll('[data-rec]');   // phone + desktop buttons share this
 const statusEl = document.querySelector('[data-status]');
 const clockEl = document.querySelector('[data-clock]');
 const roll = document.querySelector('.roll');
+const recordings = document.getElementById('recordings');
 
 // Rows on the pitch roll, top to bottom (must match the labels in index.html)
 const ROWS = ['E5', 'D5', 'C5', 'B4', 'A4', 'G4', 'F4', 'E4'];
@@ -10,6 +11,33 @@ const ROWS = ['E5', 'D5', 'C5', 'B4', 'A4', 'G4', 'F4', 'E4'];
 let mediaRecorder, stream, chunks = [], timer = null, seconds = 0;
 
 const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+document.addEventListener('DOMContentLoaded', getrecordings);
+
+function getrecordings(){
+  console.log("in recordings");
+    fetch('/api/recordings')
+    .then(response => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+    })
+    .then(data => {
+        recordings.innerHTML = '';
+        data.recordings.forEach(recording => {
+            const li = document.createElement('li');
+            li.className = 'memo';
+            li.innerHTML = `
+                <button class="play" type="button" aria-label="Play ${recording.title}"></button>
+                <div><b>${recording.title}</b><span class="meta">${new Date(recording.created_at).toLocaleString()} &middot; ${fmt(recording.duration)} &middot; ${recording.key}</span><span class="seq">${recording.notes.join(' ')}</span></div>
+            `;
+            recordings.appendChild(li);
+            console.log("recording worked");
+        });
+    })
+    .catch(error => {
+        console.log('Error fetching recordings:', error);
+    });
+}
+
 
 // One function keeps every record button and the page in sync
 function setRecording(on) {
@@ -54,6 +82,7 @@ async function startRecording() {
   mediaRecorder.ondataavailable = e => chunks.push(e.data);
   mediaRecorder.onstop = () => {
     stream.getTracks().forEach(t => t.stop());   // release the mic
+    console.log('Recording stopped, uploading...');
     uploadRecording();
   };
   mediaRecorder.start();
@@ -71,6 +100,8 @@ async function uploadRecording() {
     const res = await fetch('/api/analyze', { method: 'POST', body: formData });
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
+    renderNotes(data.notes);
+    getrecordings();
     renderNotes(data.notes);
   } catch (err) {
     if (statusEl) statusEl.textContent = 'Analysis failed';
