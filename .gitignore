@@ -1,6 +1,15 @@
-venv/
+# Audio
+tritone-app/static/audio/*
+!tritone-app/static/audio/.gitkeep
+
+# Secrets
+.env
+
+# Python
 __pycache__/
 *.pyc
-.env
-*.log
-instance/
+.venv/
+
+# OS cruft
+.DS_Store
+Thumbs.db
