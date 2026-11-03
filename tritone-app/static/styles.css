@@ -67,7 +67,7 @@ body:has(#tab-record:checked) .library{display:none}
 .play::after{content:"";position:absolute;inset:14px 12px 14px 17px;background:var(--ink);clip-path:polygon(0 0,100% 50%,0 100%)}
 
 /* Studio */
-.studio-head{display:none}
+.studio-head{display:block}
 .readout{text-align:center}
 .status{margin:0;font:500 12px var(--mono);letter-spacing:.2em;color:var(--teal);text-transform:uppercase}
 .note{margin:6px 0 0;font:italic 600 96px/1 var(--serif)}
@@ -75,21 +75,15 @@ body:has(#tab-record:checked) .library{display:none}
 .hz{margin:4px 0 0;font:400 13px var(--mono);color:var(--mute)}
 
 /* Pitch roll: 8 semitone rows, bars placed with --row (0–7), --x and --w (percent) */
-.roll{position:relative;height:256px;margin-top:24px;border-radius:16px;overflow:hidden;background:var(--panel);border:1px solid var(--line)}
+.roll{position:relative;height:256px;margin-top:0px;border-radius:16px;overflow:hidden;background:var(--panel);border:1px solid var(--line)}
 .row{position:absolute;left:0;right:0;top:calc(var(--row)*12.5%);height:12.5%;padding-left:8px;display:flex;align-items:center;border-top:1px solid var(--grid);font:500 11px var(--mono);color:var(--mute)}
 .bar{position:absolute;left:calc(var(--x)*1%);width:calc(var(--w)*1%);top:calc(var(--row)*12.5% + 6.25%);height:20px;margin-top:-10px;border-radius:10px;background:var(--amber)}
 .bar.is-live{background:var(--teal);box-shadow:0 0 14px var(--teal)}
 .playhead{position:absolute;top:0;bottom:0;left:calc(var(--x)*1%);width:2px;background:var(--rose)}
 .clock{display:flex;justify-content:space-between;margin:18px 0 0;font:400 13px var(--mono);color:var(--mute)}
-.roll-wrap {
-  display: grid;
-  grid-template-columns: 2.75rem 1fr;
-}
-
-.roll-keys {
-  display: grid;
-  grid-template-rows: repeat(var(--row-count, 8), 1fr);
-}
+.roll-wrap{display:grid;grid-template-columns:2.75rem 1fr;margin-top:24px}
+.roll-keys{height:256px;display:grid;grid-template-rows:repeat(var(--row-count,8),1fr)}
+.roll-keys span{min-height:0;overflow:hidden;line-height:1}
 .roll-keys span {
   display: flex;
   align-items: center;

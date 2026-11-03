@@ -5,7 +5,8 @@ const clockEl = document.querySelector('[data-clock]');
 const roll = document.querySelector('.roll');
 const recordings = document.getElementById('recordings');
 const titleInput = document.getElementById('recording-title');
-const heading = document.getElementById('header-title');
+const headerTitle = document.getElementById('header-title');
+const tabRecord = document.getElementById('tab-record');
 
 // Rows on the pitch roll, top to bottom (must match the labels in index.html)
 const ROWS = ['E5', 'D5', 'C5', 'B4', 'A4', 'G4', 'F4', 'E4'];
@@ -33,7 +34,7 @@ recordings.addEventListener('click', async (e) => {
       if (String(id) === String(currentRecordingId)) {
         // they deleted the one currently open in the studio — clear it out
         currentRecordingId = null;
-        heading.textContent = 'No recording selected';
+        headerTitle.textContent = 'No recording selected';
         renderNotes([]);
       }
     } catch (err) {
@@ -93,34 +94,53 @@ function getrecordings(){
     .catch(error => console.error('Error fetching recordings:', error));
 }
 
+
 function loadRecording(recording) {
   currentRecordingId = recording.id;
-  heading.textContent = recording.title;
-  heading.dataset.originalTitle = recording.title;
+  headerTitle.textContent = recording.title;
+  headerTitle.dataset.originalTitle = recording.title;
   renderNotes(recording.notes);
-  Playback.load(`/static/audio/${recording.filename}`, recording.duration); 
+  Playback.load(`/static/audio/${recording.filename}`, recording.duration);
+  tabRecord.checked = true;   // jump to the studio screen on mobile
 }
 
+function reset() {
+  audio.pause();
+  audio.removeAttribute('src');
+  audio.load();          // actually drops the old source
+  duration = 0;
+  roll.setAttribute('aria-valuemax', 0);
+  render();
+  return { load, toggle, seek, reset };
+
+}
+function clearStudio() {
+  currentRecordingId = null;
+  headerTitle.textContent = '';
+  headerTitle.dataset.originalTitle = '';
+  renderNotes([]);
+  Playback.reset();
+}
 let currentRecordingId = null;
-heading.addEventListener('blur', async () => {
+headerTitle.addEventListener('blur', async () => {
   if (!currentRecordingId) return; // nothing loaded yet, nothing to rename
-  const newTitle = heading.textContent.trim();
+  const newTitle = headerTitle.textContent.trim();
   if (!newTitle) {
-    heading.textContent = heading.title; // revert if they cleared it
+    headerTitle.textContent = headerTitle.dataset.originalTitle; // revert if they cleared it
     return;
   }
-  await fetch(`/api/recordings/${heading.id}`, {
+  await fetch(`/api/recordings/${currentRecordingId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title: newTitle }),
   });
-  heading.dataset.originalTitle = newTitle; // update the original title to the new one
+  headerTitle.dataset.originalTitle = newTitle; // update the original title to the new one
 });
 
 
 // One function keeps every record button and the page in sync
 function setRecording(on) {
-  if (on) seconds=0;
+  if (on) seconds = 0;
   document.body.classList.toggle('is-recording', on);
   recButtons.forEach(btn => {
     btn.setAttribute('aria-pressed', on);
@@ -133,7 +153,6 @@ function setRecording(on) {
 
   clearInterval(timer);
   if (on) {
-    seconds = 0;
     timer = setInterval(() => { seconds++; setRecording.tick(); }, 1000);
   }
 }
@@ -147,8 +166,15 @@ setRecording.tick = () => {
 recButtons.forEach(btn => btn.addEventListener('click', async () => {
   const on = btn.getAttribute('aria-pressed') !== 'true';
   if (on) {
-    try { await startRecording(); setRecording(true); }
-    catch (err) { setRecording(false); if (statusEl) statusEl.textContent = 'Mic blocked'; }
+    try {
+      clearStudio();
+      tabRecord.checked = true;
+      await startRecording();
+      setRecording(true);
+    } catch (err) {
+      setRecording(false);
+      if (statusEl) statusEl.textContent = 'Mic blocked';
+    }
   } else {
     stopRecording();
     setRecording(false);
@@ -204,8 +230,8 @@ function midiToNote(midi) {
 function buildRows(notes) {
   if (!notes.length) return ['C4']; // fallback for an empty roll
   const midis = notes.map(n => toMidi(n.note)).filter(m => m !== null);
-  const min = Math.min(...midis) - 1;
-  const max = Math.max(...midis) + 1;
+  let min = Math.min(...midis) - 1;
+  let max = Math.max(...midis) + 1;
   
   const MAX_SPAN = 24; // 2 octaves
   if (max - min > MAX_SPAN) {
@@ -221,13 +247,23 @@ function buildRows(notes) {
 let currentRows = [];
 
 function renderNotes(notes) {
+
+  const keysEl = document.getElementById('roll-keys');
+  roll.querySelectorAll('.bar').forEach(el => el.remove());
+
+  if (!notes.length) {
+    keysEl.innerHTML = '';
+    const list = document.querySelector('.note-list');
+    if (list) list.textContent = '';
+    return;
+  }
+
   currentRows = buildRows(notes);
 
-  // Row labels
-  const keysEl = document.getElementById('roll-keys');
   keysEl.innerHTML = currentRows
     .map(n => `<span class="${n.includes('♯') ? 'is-black' : ''}">${n}</span>`)
     .join('');
+  document.querySelector('.roll-wrap').style.setProperty('--row-count', currentRows.length);
 
   // Match CSS row height to however many rows we actually have
   roll.style.setProperty('--row-count', currentRows.length);
@@ -338,6 +374,16 @@ const Playback = (() => {
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });
 
-  playBtn.addEventListener('click', toggle);
-  return { load, toggle, seek };
+    playBtn.addEventListener('click', toggle);
+      function reset() {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      duration = 0;
+      roll.setAttribute('aria-valuemax', 0);
+      render();
+    }
+
+    playBtn.addEventListener('click', toggle);
+    return { load, toggle, seek, reset };
 })();
