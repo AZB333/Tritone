@@ -104,16 +104,6 @@ function loadRecording(recording) {
   tabRecord.checked = true;   // jump to the studio screen on mobile
 }
 
-function reset() {
-  audio.pause();
-  audio.removeAttribute('src');
-  audio.load();          // actually drops the old source
-  duration = 0;
-  roll.setAttribute('aria-valuemax', 0);
-  render();
-  return { load, toggle, seek, reset };
-
-}
 function clearStudio() {
   currentRecordingId = null;
   headerTitle.textContent = '';
@@ -198,16 +188,16 @@ function stopRecording() {
 }
 
 async function uploadRecording() {
-  const blob = new Blob(chunks, { type: 'audio/webm' });
+  const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+  const ext = mediaRecorder.mimeType.includes('mp4') ? 'm4a' : 'webm';
   const formData = new FormData();
-  formData.append('audio', blob, 'memo.webm');
+  formData.append('audio', blob, `memo.${ext}`);
   try {
     const res = await fetch('/api/analyze', { method: 'POST', body: formData });
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     renderNotes(data.notes);
     getrecordings();
-    // loadRecording(data); //we'll worry about this soon, without configuring ts a fresh recording won't play
   } catch (err) {
     if (statusEl) statusEl.textContent = 'Analysis failed';
   }
@@ -327,7 +317,6 @@ const Playback = (() => {
     if (!duration && isFinite(audio.duration)) { duration = audio.duration; roll.setAttribute('aria-valuemax', duration); render(); }
   });
 
-  // Pass the stored duration: MediaRecorder webm files often report Infinity
   function load(url, seconds = 0) {
     audio.pause();
     audio.src = url;
@@ -374,7 +363,6 @@ const Playback = (() => {
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });
 
-    playBtn.addEventListener('click', toggle);
       function reset() {
       audio.pause();
       audio.removeAttribute('src');

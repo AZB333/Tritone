@@ -9,6 +9,8 @@ from psycopg2.extras import RealDictCursor
 import secrets
 import shutil
 import random
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 ADJECTIVES = [
     "Dizzy", "Velvet", "Rusty", "Sly", "Mellow", "Jumpy", "Lucky", "Breezy",
@@ -29,6 +31,7 @@ AUDIO_DIR = "static/audio"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 def get_db_connection():
     return psycopg2.connect(os.environ["DATABASE_URL"])
@@ -41,26 +44,37 @@ audio processing section
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
     file = request.files["audio"]
-    raw_path = f"/tmp/{uuid.uuid4()}.webm"
+    ext = os.path.splitext(file.filename)[1] or ".webm"
+    raw_path = f"/tmp/{uuid.uuid4()}{ext}"
+    wav_path = os.path.splitext(raw_path)[0] + ".wav"
     file.save(raw_path)
 
     # Normalize to wav so librosa reads it consistently across browsers
-    wav_path = raw_path.replace(".webm", ".wav")
-    subprocess.run(["ffmpeg", "-i", raw_path, "-ar", "22050", wav_path], check=True)
+    try:
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-loglevel", "error", "-i", raw_path,
+                "-vn", "-ac", "1", "-ar", "22050", wav_path],
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            os.remove(raw_path)
+            return jsonify({"error": "Could not decode audio"}), 400
 
-    y, sr = librosa.load(wav_path, sr=22050)
-    f0, voiced_flag, _ = librosa.pyin(
-        y, fmin=librosa.note_to_hz('F2'), fmax=librosa.note_to_hz('C6')
-    )
+        y, sr = librosa.load(wav_path, sr=22050)
+        f0, voiced_flag, _ = librosa.pyin(
+            y, fmin=librosa.note_to_hz('F2'), fmax=librosa.note_to_hz('C6')
+        )
 
-    notes = extract_notes(f0, voiced_flag, sr)
+        notes = extract_notes(f0, voiced_flag, sr)
 
-    final_filename = f"{uuid.uuid4()}.wav"
-    final_path = os.path.join(AUDIO_DIR, final_filename)
-    shutil.move(wav_path, final_path)
+        final_filename = f"{uuid.uuid4()}.wav"
+        final_path = os.path.join(AUDIO_DIR, final_filename)
+        shutil.move(wav_path, final_path)
 
     # move the file into permanent storage, save path + notes to DB here
-    os.remove(raw_path)
+    finally:
+        os.remove(raw_path)
 
     user_id = get_user_id_from_session(request.cookies.get("session_id"))
     conn = get_db_connection()
