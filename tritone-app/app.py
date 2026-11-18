@@ -11,6 +11,13 @@ import shutil
 import random
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from flask import send_from_directory
+
+
+# need to check if recording name is updated then update name in library
+# if user renames a recording to a name that already exists, revert to old name
+# add a 180x180 thumbnail for the app icon
+
 
 ADJECTIVES = [
     "Dizzy", "Velvet", "Rusty", "Sly", "Mellow", "Jumpy", "Lucky", "Breezy",
@@ -36,6 +43,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 def get_db_connection():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.static_folder, 'favicon.ico')
 
 """
 audio processing section
